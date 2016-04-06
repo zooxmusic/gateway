@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration
+		http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/integration/sftp http://www.springframework.org/schema/integration/sftp/spring-integration-sftp.xsd">
+
+	<bean id="sftpSessionFactory" class="org.springframework.integration.sftp.session.DefaultSftpSessionFactory">
+		<property name="host" value="vault.clearesult.com" />
+		<property name="port" value="22"/>
+		<property name="user" value="bszucs" />
+		<property name="password" value="109F0r3$t" />
+		<property name="allowUnknownKeys" value="true"/>
+	</bean>
+
+	<int:channel id="output">
+		<int:queue />
+	</int:channel>
+
+	<int:channel id="inboundMGetRecursive" />
+
+	<int-sftp:outbound-gateway id="gwMget"
+							   session-factory="sftpSessionFactory"
+							   request-channel="inboundMGetRecursive"
+							   command="mget"
+							   expression="payload"
+							   filename-regex=".*\.xml"
+							   command-options="-R"
+							   use-temporary-file-name="false"
+							   auto-create-local-directory="true"
+							   local-directory="C:\IMSTransferFiles\Inbound\CR\XML_Applications"
+							   mode="IGNORE"
+							   reply-channel="output">
+		<int-sftp:request-handler-advice-chain>
+			<int:retry-advice />
+		</int-sftp:request-handler-advice-chain>
+
+		<!--<int-sftp:request-handler-advice-chain>
+			<beans:bean class="org.springframework.integration.handler.advice.ExpressionEvaluatingRequestHandlerAdvice">
+				<beans:property name="onSuccessExpression" value="payload.renameTo(payload.name + '.done')"/>
+				<beans:property name="successChannel" ref="mailMsgTransformer"/>
+				<beans:property name="onFailureExpression" value="payload.renameTo(payload.name + '.error')"/>
+				<beans:property name="failureChannel" ref="mailMsgTransformer" />
+			</beans:bean>
+		</int-sftp:request-handler-advice-chain>-->
+	</int-sftp:outbound-gateway>
+
+
+</beans>
